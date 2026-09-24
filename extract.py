@@ -1,4 +1,13 @@
-# 09/23 focus on normalize_status, before anything run 
+# STATUS (9/24): normalize_status() done and working. Explored posting_close_date:
+# confirmed 3 real states -- 24 real dates, 2 "Continuous", 14 unknown/NaN (not the same
+# as Continuous). is_continuous boolean prototype in __main__ works but only covers
+# 2 of the 3 states -- need close_date_status categorical (dated/continuous/unknown) instead.
+# VS Code autofilled 3 lines (date_submitted/posting_close_date/days_since_submitted)
+# in load_tracker() -- commented out, UNREVIEWED, do not trust or commit as-is.
+# NEXT: 1) write classify_close_date() as standalone function, same shape as normalize_status()
+#       2) move the working conversion logic from __main__ into load_tracker()
+#       3) recompute days_since_submitted from date_submitted, don't trust the autofilled line
+#       4) add raise-on-unexpected check after conversion
 
 from pathlib import Path
 
@@ -50,10 +59,20 @@ def load_tracker(path):
         .str.lower()
         )
     df_combined["application_status"] = normalize_status(df_combined["application_status"])
+    """df_combined["date_submitted"] = pd.to_datetime(df_combined["date_submitted"])
+    df_combined["posting_close_date"] = pd.to_datetime(df_combined["posting_close_date"], errors="coerce")
+    df_combined["days_since_submitted"] = (pd.Timestamp.now() - df_combined["date_submitted"]).dt.days"""
     assert len(df_combined) == 40, f"expected 40 rows, got {len(df_combined)}"
     return df_combined
 
 if __name__ == "__main__":
     df = load_tracker(file_path)
     print(df.columns.tolist())
-    print(df["application_status"].value_counts())
+    print("close date: ", df["posting_close_date"])
+    print(df["date_submitted"].value_counts())
+    print(df["posting_close_date"].value_counts())
+    print(df["days_since_submitted"].value_counts())
+    df["is_continuous"] = df["posting_close_date"].astype(str).str.strip().str.lower() == "continuous"
+    print(df["is_continuous"].value_counts())
+    df["posting_close_date"] = pd.to_datetime(df["posting_close_date"], errors="coerce")
+    print("IsNA: ", df["posting_close_date"].isna().sum())
