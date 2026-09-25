@@ -1,16 +1,22 @@
-# STATUS (9/24): normalize_status() done and working. Explored posting_close_date:
-# confirmed 3 real states -- 24 real dates, 2 "Continuous", 14 unknown/NaN (not the same
-# as Continuous). is_continuous boolean prototype in __main__ works but only covers
-# 2 of the 3 states -- need close_date_status categorical (dated/continuous/unknown) instead.
-# VS Code autofilled 3 lines (date_submitted/posting_close_date/days_since_submitted)
-# in load_tracker() -- commented out, UNREVIEWED, do not trust or commit as-is.
-# NEXT: 1) write classify_close_date() as standalone function, same shape as normalize_status()
-#       2) move the working conversion logic from __main__ into load_tracker()
-#       3) recompute days_since_submitted from date_submitted, don't trust the autofilled line
-#       4) add raise-on-unexpected check after conversion
+# STATUS (9/24 pt2): classify_close_date() FIXED and verified -- 24 dated, 2 continuous,
+# 14 unknown = 40, correct. Bug found: must classify BEFORE running pd.to_datetime(),
+# since coercion turns "Continuous" into NaT, indistinguishable from real unknowns.
+# Both normalize_status() and classify_close_date() proven correct in __main__, still
+# NOT wired into load_tracker() -- everything still lives in __main__ as manual test calls.
+# NEXT: 1) move both the classify_close_date() call and the to_datetime conversion into
+#          load_tracker() itself (classify FIRST, convert SECOND), add close_date_status
+#          and posting_close_date (as real datetime) as columns on df_combined
+#       2) convert date_submitted to datetime inside load_tracker() too (looked clean,
+#          no unknowns found, but hasn't been formally converted/asserted yet)
+#       3) recompute days_since_submitted from date_submitted inside load_tracker(),
+#          delete trust in the stored Excel column
+#       4) remove the leftover commented-out autofill block, it's superseded now
+#       5) add raise-on-unexpected check: after conversion, every NaT row's close_date_status
+#          should be "continuous" or "unknown", never anything else
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -46,6 +52,23 @@ def normalize_status(series):
         raise ValueError(f"Unmapped status values: {cleaned[unmapped_mask].unique().tolist()}")
     return mapped
     
+def classify_close_date(series):
+    """Classify the posting_close_date column into three categories: 'dated', 'continuous', and 'unknown'."""
+    # clean strings while keeping the original series intact to detect nulls
+    is_unknown = series.isna()
+    cleaned = series.astype(str).str.strip().str.lower()
+
+    # define the explicit condititions
+    is_continuous = cleaned == "continuous"
+  
+    #Match conditions to the choices
+    conditions = [
+        is_continuous,
+        is_unknown
+    ]
+    choices = ["continuous", "unknown"]
+    result =  np.select(conditions, choices, default="dated")
+    return pd.Series(pd.Categorical(result), index=series.index, name="close_date_status")
 
 def load_tracker(path):
     df_active = pd.read_excel(path, sheet_name= "Active Applications").assign(source_sheet="Active Applications")
@@ -72,7 +95,8 @@ if __name__ == "__main__":
     print(df["date_submitted"].value_counts())
     print(df["posting_close_date"].value_counts())
     print(df["days_since_submitted"].value_counts())
-    df["is_continuous"] = df["posting_close_date"].astype(str).str.strip().str.lower() == "continuous"
-    print(df["is_continuous"].value_counts())
+    result = classify_close_date(df["posting_close_date"])
+    print(result.tolist())
+    print(result.value_counts())
     df["posting_close_date"] = pd.to_datetime(df["posting_close_date"], errors="coerce")
     print("IsNA: ", df["posting_close_date"].isna().sum())
