@@ -1,18 +1,13 @@
-# STATUS (9/24 pt2): classify_close_date() FIXED and verified -- 24 dated, 2 continuous,
-# 14 unknown = 40, correct. Bug found: must classify BEFORE running pd.to_datetime(),
-# since coercion turns "Continuous" into NaT, indistinguishable from real unknowns.
-# Both normalize_status() and classify_close_date() proven correct in __main__, still
-# NOT wired into load_tracker() -- everything still lives in __main__ as manual test calls.
-# NEXT: 1) move both the classify_close_date() call and the to_datetime conversion into
-#          load_tracker() itself (classify FIRST, convert SECOND), add close_date_status
-#          and posting_close_date (as real datetime) as columns on df_combined
-#       2) convert date_submitted to datetime inside load_tracker() too (looked clean,
-#          no unknowns found, but hasn't been formally converted/asserted yet)
-#       3) recompute days_since_submitted from date_submitted inside load_tracker(),
-#          delete trust in the stored Excel column
-#       4) remove the leftover commented-out autofill block, it's superseded now
-#       5) add raise-on-unexpected check: after conversion, every NaT row's close_date_status
-#          should be "continuous" or "unknown", never anything else
+# STATUS (9/26): classify_close_date() + both date conversions wired into load_tracker(),
+# verified: 24 dated, 2 continuous, 14 unknown (=40); date_submitted has 0 nulls.
+# posting_close_date is now real datetime64 with NaT for both continuous and unknown rows,
+# close_date_status is what distinguishes them.
+# NEXT: 1) recompute days_since_submitted = (pd.Timestamp.now() - date_submitted).days,
+#          inside load_tracker(). Decide: use .normalize() on now() first, or not?
+#          Currently the column still holds STALE values from the original Excel formula.
+#       2) add raise-on-unexpected check to classify_close_date() (currently silently
+#          defaults anything unrecognized to "dated" -- should fail loudly instead)
+#       3) clean up leftover print statements in __main__ if it's getting cluttered
 
 from pathlib import Path
 
@@ -82,9 +77,10 @@ def load_tracker(path):
         .str.lower()
         )
     df_combined["application_status"] = normalize_status(df_combined["application_status"])
-    """df_combined["date_submitted"] = pd.to_datetime(df_combined["date_submitted"])
+    df_combined["close_date_status"] = classify_close_date(df_combined["posting_close_date"])
     df_combined["posting_close_date"] = pd.to_datetime(df_combined["posting_close_date"], errors="coerce")
-    df_combined["days_since_submitted"] = (pd.Timestamp.now() - df_combined["date_submitted"]).dt.days"""
+    df_combined["date_submitted"] = pd.to_datetime(df_combined["date_submitted"], errors="coerce")
+    
     assert len(df_combined) == 40, f"expected 40 rows, got {len(df_combined)}"
     return df_combined
 
@@ -95,8 +91,8 @@ if __name__ == "__main__":
     print(df["date_submitted"].value_counts())
     print(df["posting_close_date"].value_counts())
     print(df["days_since_submitted"].value_counts())
-    result = classify_close_date(df["posting_close_date"])
-    print(result.tolist())
-    print(result.value_counts())
-    df["posting_close_date"] = pd.to_datetime(df["posting_close_date"], errors="coerce")
+    print(df["close_date_status"].tolist())
+    print(df["close_date_status"].value_counts())
     print("IsNA: ", df["posting_close_date"].isna().sum())
+    print("IsNA: ", df["date_submitted"].isna().sum())
+    
