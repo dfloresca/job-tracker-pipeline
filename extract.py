@@ -6,12 +6,11 @@
 #          salary_max, salary_pay_basis columns, keep posted_salary_range untouched
 #       2) M1 target was 9/30 -- this puts you on track to hit it tomorrow
 
+import re
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-import re
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -121,6 +120,10 @@ def load_tracker(path):
     df_combined["date_submitted"] = pd.to_datetime(df_combined["date_submitted"], errors="coerce")
     # compute days_since_submitted as the difference between now and date_submitted normalizeing times for consistency
     df_combined["days_since_submitted"] = (pd.Timestamp.now().normalize() - df_combined["date_submitted"]).dt.days
+    # parse the salary range into min, max, and pay basis columns
+    df_combined[["salary_min", "salary_max", "salary_pay_basis"]] =(df_combined["posted_salary_range"].apply(parse_salary).tolist())
+    df_combined["salary_min"] = pd.to_numeric(df_combined["salary_min"], errors="coerce")
+    df_combined["salary_max"] = pd.to_numeric(df_combined["salary_max"], errors="coerce")
     
     
     assert len(df_combined) == 40, f"expected 40 rows, got {len(df_combined)}"
@@ -128,5 +131,8 @@ def load_tracker(path):
 
 if __name__ == "__main__":
     df = load_tracker(file_path)
-    for i, text in df["posted_salary_range"].iloc[:40].items():
-        print(i, "Parsed Salary", parse_salary(text))
+    print(df[["salary_min", "salary_max"]].dtypes)
+    print("posted_salary_range: \n", df["posted_salary_range"].head(5))
+    print("salary_min: \n", df["salary_min"].head(40))
+    print("salary_max: \n", df["salary_max"].head(40))
+    print("salary_pay_basis: \n", df["salary_pay_basis"].head(40))
