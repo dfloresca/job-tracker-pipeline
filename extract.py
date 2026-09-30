@@ -1,11 +1,3 @@
-# STATUS (9/29): parse_salary() built and tested against all 40 real rows -- 100% parse
-# rate, zero crashes. Combines extract_first_range() + detect_pay_basis(), handles
-# hourly-to-annual conversion (HOURS_PER_YEAR=2080), single-number and blank-cell cases.
-# Spot-checked rows 22 and 34 against raw Excel values -- both correct.
-# NEXT: 1) wire parse_salary() into load_tracker(): call it, unpack into salary_min,
-#          salary_max, salary_pay_basis columns, keep posted_salary_range untouched
-#       2) M1 target was 9/30 -- this puts you on track to hit it tomorrow
-
 import re
 from pathlib import Path
 
