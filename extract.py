@@ -10,6 +10,15 @@ file_path = BASE_DIR / "data" / "Washington_Job_tracker_v2_9_19_1.xlsx"
 
 HOURS_PER_YEAR = 2080
 
+def classify_employer(company):
+    c = company.lower()
+    if c.startswith(("king county", "city of seattle", "port of seattle", "snohomish county pud", "sound transit")):
+        return "public"
+    if c.startswith(("archdiocese", "providence", "providence swedish", "fred hutchinson", "kaiser permanente", "premera blue cross", "cambia")):
+        return "nonprofit"
+    else:
+        return "private"
+
 def normalize_status(series):
     """
     Strip whitespace and emojis from the application_status column, then map to canonical values 
@@ -123,8 +132,4 @@ def load_tracker(path):
 
 if __name__ == "__main__":
     df = load_tracker(file_path)
-    print(df[["salary_min", "salary_max"]].dtypes)
-    print("posted_salary_range: \n", df["posted_salary_range"].head(5))
-    print("salary_min: \n", df["salary_min"].head(40))
-    print("salary_max: \n", df["salary_max"].head(40))
-    print("salary_pay_basis: \n", df["salary_pay_basis"].head(40))
+    print(df["company"].unique())
