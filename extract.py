@@ -1,3 +1,11 @@
+# STATUS (10/6): schema.sql written -- applications table (UNIQUE on company/job_title/
+# date_submitted) and status_history table (FK to applications.id) both done.
+# classify_employer() written as a standalone function, NOT yet wired into load_tracker()
+# or tested against the real company list.
+# NEXT: 1) add employer_type TEXT to applications table in schema.sql to match
+#       2) THEN start Session 9: write the Python that creates tracker.db from schema.sql
+#          and inserts df_combined into it
+
 import re
 from pathlib import Path
 
@@ -14,7 +22,7 @@ def classify_employer(company):
     c = company.lower()
     if c.startswith(("king county", "city of seattle", "port of seattle", "snohomish county pud", "sound transit")):
         return "public"
-    if c.startswith(("archdiocese", "providence", "providence swedish", "fred hutchinson", "kaiser permanente", "premera blue cross", "cambia")):
+    if c.startswith(("archdiocese", "providence", "fred hutchinson", "kaiser permanente", "premera blue cross", "cambia")):
         return "nonprofit"
     else:
         return "private"
@@ -125,11 +133,12 @@ def load_tracker(path):
     df_combined[["salary_min", "salary_max", "salary_pay_basis"]] =(df_combined["posted_salary_range"].apply(parse_salary).tolist())
     df_combined["salary_min"] = pd.to_numeric(df_combined["salary_min"], errors="coerce")
     df_combined["salary_max"] = pd.to_numeric(df_combined["salary_max"], errors="coerce")
-    
+    df_combined["employer_type"] = df_combined["company"].apply(classify_employer)    
     
     assert len(df_combined) == 40, f"expected 40 rows, got {len(df_combined)}"
     return df_combined
 
 if __name__ == "__main__":
     df = load_tracker(file_path)
-    print(df["company"].unique())
+    #print(df["company"].unique())
+    print(df[["company", "employer_type"]])
