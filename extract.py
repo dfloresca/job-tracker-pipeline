@@ -1,12 +1,14 @@
-# STATUS (10/6): schema.sql written -- applications table (UNIQUE on company/job_title/
-# date_submitted) and status_history table (FK to applications.id) both done.
-# classify_employer() written as a standalone function, NOT yet wired into load_tracker()
-# or tested against the real company list.
-# NEXT: 1) add employer_type TEXT to applications table in schema.sql to match
-#       2) THEN start Session 9: write the Python that creates tracker.db from schema.sql
-#          and inserts df_combined into it
-
+# STATUS (10/7): create_database() built and verified -- tracker.db now exists with
+# both applications and status_history tables, correct columns confirmed visually in
+# SQLite Viewer. Zero rows in both, as expected, no insert logic yet.
+# NEXT: 1) write the insert logic: take df_combined from load_tracker(), insert into
+#          applications table (watch for the salary_min/max dtype -- they're float64,
+#          should map cleanly to REAL)
+#       2) first pass can be a plain INSERT (not idempotent yet) -- idempotent upsert
+#          logic is Session 10's job specifically, don't try to solve both at once
+#       3) after insert, verify row count in tracker.db matches df_combined (40 rows)
 import re
+import sqlite3
 from pathlib import Path
 
 import numpy as np
@@ -17,6 +19,15 @@ BASE_DIR = Path(__file__).resolve().parent
 file_path = BASE_DIR / "data" / "Washington_Job_tracker_v2_9_19_1.xlsx"
 
 HOURS_PER_YEAR = 2080
+
+def create_database(db_path, schema_path):
+    """Create a SQLite database at db_path using the schema in schema_path"""
+    with open(schema_path) as f:
+        schema = f.read()
+    conn = sqlite3.connect(db_path)
+    conn.executescript(schema)
+    conn.commit()
+    conn.close()
 
 def classify_employer(company):
     c = company.lower()
@@ -139,6 +150,8 @@ def load_tracker(path):
     return df_combined
 
 if __name__ == "__main__":
-    df = load_tracker(file_path)
-    #print(df["company"].unique())
-    print(df[["company", "employer_type"]])
+    create_database(BASE_DIR / "tracker.db", BASE_DIR / "schema.sql")
+    conn = sqlite3.connect(BASE_DIR / "tracker.db")
+    print(conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall())
+    conn.close()
+    # df = load_tracker(file_path)
