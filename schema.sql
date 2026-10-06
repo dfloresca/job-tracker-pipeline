@@ -1,4 +1,4 @@
-CREATE TABLE applications (
+CREATE TABLE IF NOT EXISTS applications (
     id INTEGER PRIMARY KEY,
     job_title TEXT NOT NULL,
     company TEXT NOT NULL,
@@ -15,10 +15,11 @@ CREATE TABLE applications (
     salary_min REAL,
     salary_max REAL,
     salary_pay_basis TEXT,
+    employer_type TEXT,
     UNIQUE(company, job_title, date_submitted)
 );
 
-CREATE TABLE status_history (
+CREATE TABLE IF NOT EXISTS status_history (
     id INTEGER PRIMARY KEY,
     application_id INTEGER NOT NULL,
     status TEXT NOT NULL,
