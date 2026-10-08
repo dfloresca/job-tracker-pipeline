@@ -1,12 +1,11 @@
-# STATUS (10/7): create_database() built and verified -- tracker.db now exists with
-# both applications and status_history tables, correct columns confirmed visually in
-# SQLite Viewer. Zero rows in both, as expected, no insert logic yet.
-# NEXT: 1) write the insert logic: take df_combined from load_tracker(), insert into
-#          applications table (watch for the salary_min/max dtype -- they're float64,
-#          should map cleanly to REAL)
-#       2) first pass can be a plain INSERT (not idempotent yet) -- idempotent upsert
-#          logic is Session 10's job specifically, don't try to solve both at once
-#       3) after insert, verify row count in tracker.db matches df_combined (40 rows)
+# STATUS (10/8): Session 9 complete. insert_applications() inserts all 40 rows into
+# tracker.db's applications table. Fixed NaT-handling bug (pd.isna() required, not
+# `is not None`) when converting datetime columns to ISO strings for SQLite.
+# NEXT: Session 10 -- make the insert idempotent. Running the pipeline twice should
+# NOT duplicate rows. Approach: upsert on the natural key (company, job_title,
+# date_submitted) using SQLite's INSERT ... ON CONFLICT DO UPDATE. Also: only log a
+# status_history row when a row's status actually CHANGED from what's already stored,
+# not on every rerun.
 import re
 import sqlite3
 from pathlib import Path
@@ -149,9 +148,33 @@ def load_tracker(path):
     assert len(df_combined) == 40, f"expected 40 rows, got {len(df_combined)}"
     return df_combined
 
-if __name__ == "__main__":
-    create_database(BASE_DIR / "tracker.db", BASE_DIR / "schema.sql")
-    conn = sqlite3.connect(BASE_DIR / "tracker.db")
-    print(conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall())
+def insert_applications(df, db_path):
+    """Insert the applications from the DataFrame into the applications table in the SQLite database."""
+    cols = ["job_title", "company", "req", "date_submitted", "posting_close_date",
+            "posted_salary_range", "fit_lane", "application_status",
+            "next_steps_action_items", "notes", "source_sheet", "close_date_status",
+            "salary_min", "salary_max", "salary_pay_basis", "employer_type"]
+    df_clean = df[cols].where(pd.notna(df[cols]), None)  # replace NaN with None for SQLite
+
+    for date_col in ["date_submitted", "posting_close_date"]:
+        df_clean[date_col] = df_clean[date_col].apply(lambda x: x.strftime("%Y-%m-%d") if not pd.isna(x) else None)
+    
+    rows = list(df_clean.itertuples(index=False, name=None))
+
+    placeholders = ", ".join(["?"] * len(cols))
+    col_names = ", ".join(cols)
+    sql = f"INSERT INTO applications ({col_names}) VALUES ({placeholders})"
+
+    conn = sqlite3.connect(db_path)
+    conn.executemany(sql, rows)
+    conn.commit()
     conn.close()
-    # df = load_tracker(file_path)
+
+if __name__ == "__main__":
+    df = load_tracker(file_path)
+    create_database(BASE_DIR / "tracker.db", BASE_DIR / "schema.sql")
+    insert_applications(df, BASE_DIR / "tracker.db")
+    conn = sqlite3.connect(BASE_DIR / "tracker.db")
+    print(conn.execute("SELECT COUNT(*) FROM applications").fetchone())
+    conn.close()
+    
