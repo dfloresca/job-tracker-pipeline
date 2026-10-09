@@ -1,11 +1,3 @@
-# STATUS (10/8): Session 9 complete. insert_applications() inserts all 40 rows into
-# tracker.db's applications table. Fixed NaT-handling bug (pd.isna() required, not
-# `is not None`) when converting datetime columns to ISO strings for SQLite.
-# NEXT: Session 10 -- make the insert idempotent. Running the pipeline twice should
-# NOT duplicate rows. Approach: upsert on the natural key (company, job_title,
-# date_submitted) using SQLite's INSERT ... ON CONFLICT DO UPDATE. Also: only log a
-# status_history row when a row's status actually CHANGED from what's already stored,
-# not on every rerun.
 import re
 import sqlite3
 from pathlib import Path
@@ -163,7 +155,23 @@ def insert_applications(df, db_path):
 
     placeholders = ", ".join(["?"] * len(cols))
     col_names = ", ".join(cols)
-    sql = f"INSERT INTO applications ({col_names}) VALUES ({placeholders})"
+    sql = f"""
+    INSERT INTO applications ({col_names}) VALUES ({placeholders})
+        ON CONFLICT(company, job_title, date_submitted) DO UPDATE SET
+            req=excluded.req,
+            posting_close_date=excluded.posting_close_date,
+            posted_salary_range=excluded.posted_salary_range,
+            fit_lane=excluded.fit_lane,
+            application_status=excluded.application_status,
+            next_steps_action_items=excluded.next_steps_action_items,
+            notes=excluded.notes,
+            source_sheet=excluded.source_sheet,
+            close_date_status=excluded.close_date_status,
+            salary_min=excluded.salary_min,
+            salary_max=excluded.salary_max,
+            salary_pay_basis=excluded.salary_pay_basis,
+            employer_type=excluded.employer_type
+    """
 
     conn = sqlite3.connect(db_path)
     conn.executemany(sql, rows)
@@ -175,6 +183,7 @@ if __name__ == "__main__":
     create_database(BASE_DIR / "tracker.db", BASE_DIR / "schema.sql")
     insert_applications(df, BASE_DIR / "tracker.db")
     conn = sqlite3.connect(BASE_DIR / "tracker.db")
+    print(conn.execute("SELECT job_title, company, date_submitted, salary_min, salary_max FROM applications LIMIT 3").fetchall())
     print(conn.execute("SELECT COUNT(*) FROM applications").fetchone())
     conn.close()
     
