@@ -199,9 +199,21 @@ def lane_response_rate(db_path):
     conn.close()
     return result
 
+def employer_type_response_rate(db_path):
+    conn = sqlite3.connect(db_path)
+    result = conn.execute("""
+        SELECT employer_type, COUNT(*) AS total_applications,
+            SUM(CASE WHEN application_status != 'application_received' THEN 1 Else 0 END) AS moved_past_received
+        FROM applications
+        GROUP BY employer_type
+    """).fetchall()
+    conn.close()
+    return result
+
 if __name__ == "__main__":
     df = load_tracker(file_path)
     create_database(BASE_DIR / "tracker.db", BASE_DIR / "schema.sql")
     insert_applications(df, BASE_DIR / "tracker.db")
     print("status_breakdown: \n", status_breakdown(BASE_DIR / "tracker.db"))
     print("lane_response_rate: \n", lane_response_rate(BASE_DIR / "tracker.db"))
+    print("employer_type_response_rate: \n", employer_type_response_rate(BASE_DIR / "tracker.db"))
