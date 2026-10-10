@@ -178,12 +178,30 @@ def insert_applications(df, db_path):
     conn.commit()
     conn.close()
 
+def status_breakdown(db_path):
+    conn = sqlite3.connect(db_path)
+    result = conn.execute("""
+        SELECT application_status, COUNT(*)
+        FROM applications
+        GROUP BY application_status
+    """).fetchall()
+    conn.close()
+    return result
+
+def lane_response_rate(db_path):
+    conn = sqlite3.connect(db_path)
+    result = conn.execute("""
+        SELECT fit_lane, COUNT(*) AS total_applications,
+            SUM(CASE WHEN application_status != 'application_received' THEN 1 Else 0 END) AS moved_past_received
+        FROM applications
+        GROUP BY fit_lane
+    """).fetchall()
+    conn.close()
+    return result
+
 if __name__ == "__main__":
     df = load_tracker(file_path)
     create_database(BASE_DIR / "tracker.db", BASE_DIR / "schema.sql")
     insert_applications(df, BASE_DIR / "tracker.db")
-    conn = sqlite3.connect(BASE_DIR / "tracker.db")
-    print(conn.execute("SELECT job_title, company, date_submitted, salary_min, salary_max FROM applications LIMIT 3").fetchall())
-    print(conn.execute("SELECT COUNT(*) FROM applications").fetchone())
-    conn.close()
-    
+    print("status_breakdown: \n", status_breakdown(BASE_DIR / "tracker.db"))
+    print("lane_response_rate: \n", lane_response_rate(BASE_DIR / "tracker.db"))
