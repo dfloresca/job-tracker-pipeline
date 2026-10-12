@@ -210,10 +210,37 @@ def employer_type_response_rate(db_path):
     conn.close()
     return result
 
+def get_stored_status(db_path, company, job_title, date_submitted):
+    conn = sqlite3.connect(db_path)
+    row = conn.execute("""
+        SELECT id, application_status FROM applications WHERE company = ? AND job_title = ? AND date_submitted = ?
+    """, (company, job_title, date_submitted)).fetchone()
+    conn.close()
+    return row if row else None
+
+def log_status_changes(df, db_path):
+    conn = sqlite3.connect(db_path)
+    for row in df.itertuples():
+        stored = get_stored_status(db_path, row.company, row.job_title, row.date_submitted)
+        if stored != row.application_status:
+            # INSERT into status_history
+            pass
+    conn.commit()
+    conn.close()
+
+def insert_status_change(db_path, application_id, status, observed_on):
+    conn = sqlite3.connect(db_path)
+    conn.execute("""
+        INSERT INTO status_history (application_id, status, observed_on) VALUES (?, ?, ?)
+    """, (application_id, status, observed_on))
+    conn.commit()
+    conn.close() 
+
 if __name__ == "__main__":
     df = load_tracker(file_path)
     create_database(BASE_DIR / "tracker.db", BASE_DIR / "schema.sql")
     insert_applications(df, BASE_DIR / "tracker.db")
-    print("status_breakdown: \n", status_breakdown(BASE_DIR / "tracker.db"))
-    print("lane_response_rate: \n", lane_response_rate(BASE_DIR / "tracker.db"))
-    print("employer_type_response_rate: \n", employer_type_response_rate(BASE_DIR / "tracker.db"))
+    print("get_stored_status: \n", get_stored_status(BASE_DIR / "tracker.db", "Cambia", "Corporate Tax Analyst", "2026-09-04"))
+    print("get_stored_status: \n", get_stored_status(BASE_DIR / "tracker.db", "Cambia", "Corporate Tax Analyst", "2026-09-05"))
+    print("get_stored_status: \n", get_stored_status(BASE_DIR / "tracker.db", "BECU", "Software Developer", "2026-08-01"))
+    insert_status_change(BASE_DIR / "tracker.db", 28, "rejected", "2026-10-12")
