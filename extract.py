@@ -1,5 +1,6 @@
 import re
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -140,6 +141,26 @@ def load_tracker(path):
     assert len(df_combined) == 40, f"expected 40 rows, got {len(df_combined)}"
     return df_combined
 
+def get_all_stored_statuses(db_path):
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute("""
+        SELECT company, job_title, date_submitted, id, application_status FROM applications
+    """).fetchall()
+    conn.close()
+    return {(company, job_title, date_submitted): (app_id, status)
+            for company, job_title, date_submitted, app_id, status in rows}
+
+def sync_statuses(df, before, db_path):
+    for row in df.itertuples():
+        key = (row.company, row.job_title, row.date_submitted.strftime("%Y-%m-%d"))
+        old = before.get(key)
+
+        if old is not None:
+            application_id, old_status = old
+            if old_status != row.application_status:
+                observed_on = datetime.now(timezone.utc).date().isoformat()
+                insert_status_change(db_path, application_id, row.application_status, observed_on)
+
 def insert_applications(df, db_path):
     """Insert the applications from the DataFrame into the applications table in the SQLite database."""
     cols = ["job_title", "company", "req", "date_submitted", "posting_close_date",
@@ -210,24 +231,6 @@ def employer_type_response_rate(db_path):
     conn.close()
     return result
 
-def get_stored_status(db_path, company, job_title, date_submitted):
-    conn = sqlite3.connect(db_path)
-    row = conn.execute("""
-        SELECT id, application_status FROM applications WHERE company = ? AND job_title = ? AND date_submitted = ?
-    """, (company, job_title, date_submitted)).fetchone()
-    conn.close()
-    return row if row else None
-
-def log_status_changes(df, db_path):
-    conn = sqlite3.connect(db_path)
-    for row in df.itertuples():
-        stored = get_stored_status(db_path, row.company, row.job_title, row.date_submitted)
-        if stored != row.application_status:
-            # INSERT into status_history
-            pass
-    conn.commit()
-    conn.close()
-
 def insert_status_change(db_path, application_id, status, observed_on):
     conn = sqlite3.connect(db_path)
     conn.execute("""
@@ -239,8 +242,12 @@ def insert_status_change(db_path, application_id, status, observed_on):
 if __name__ == "__main__":
     df = load_tracker(file_path)
     create_database(BASE_DIR / "tracker.db", BASE_DIR / "schema.sql")
+    
+    before = get_all_stored_statuses(BASE_DIR / "tracker.db")
     insert_applications(df, BASE_DIR / "tracker.db")
-    print("get_stored_status: \n", get_stored_status(BASE_DIR / "tracker.db", "Cambia", "Corporate Tax Analyst", "2026-09-04"))
-    print("get_stored_status: \n", get_stored_status(BASE_DIR / "tracker.db", "Cambia", "Corporate Tax Analyst", "2026-09-05"))
-    print("get_stored_status: \n", get_stored_status(BASE_DIR / "tracker.db", "BECU", "Software Developer", "2026-08-01"))
-    insert_status_change(BASE_DIR / "tracker.db", 28, "rejected", "2026-10-12")
+    sync_statuses(df, before, BASE_DIR / "tracker.db")
+
+    conn = sqlite3.connect(BASE_DIR / "tracker.db")
+    print(conn.execute("SELECT COUNT(*) FROM status_history").fetchone())
+    print(conn.execute("SELECT * FROM status_history ORDER BY id DESC LIMIT 1").fetchall())
+    conn.close()
