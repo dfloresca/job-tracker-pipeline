@@ -150,6 +150,14 @@ def get_all_stored_statuses(db_path):
     return {(company, job_title, date_submitted): (app_id, status)
             for company, job_title, date_submitted, app_id, status in rows}
 
+def insert_status_change(db_path, application_id, status, observed_on):
+    conn = sqlite3.connect(db_path)
+    conn.execute("""
+        INSERT INTO status_history (application_id, status, observed_on) VALUES (?, ?, ?)
+    """, (application_id, status, observed_on))
+    conn.commit()
+    conn.close() 
+
 def sync_statuses(df, before, db_path):
     for row in df.itertuples():
         key = (row.company, row.job_title, row.date_submitted.strftime("%Y-%m-%d"))
@@ -231,13 +239,15 @@ def employer_type_response_rate(db_path):
     conn.close()
     return result
 
-def insert_status_change(db_path, application_id, status, observed_on):
+def salary_distribution_by_lane(db_path, column="salary_min"):
     conn = sqlite3.connect(db_path)
-    conn.execute("""
-        INSERT INTO status_history (application_id, status, observed_on) VALUES (?, ?, ?)
-    """, (application_id, status, observed_on))
-    conn.commit()
-    conn.close() 
+    result = conn.execute(f"""
+        SELECT fit_lane, MIN({column}) AS min_salary, AVG({column}) AS avg_salary, MAX({column}) AS max_salary
+        FROM applications
+        GROUP BY fit_lane
+    """).fetchall()
+    conn.close()
+    return result
 
 if __name__ == "__main__":
     df = load_tracker(file_path)
@@ -247,7 +257,5 @@ if __name__ == "__main__":
     insert_applications(df, BASE_DIR / "tracker.db")
     sync_statuses(df, before, BASE_DIR / "tracker.db")
 
-    conn = sqlite3.connect(BASE_DIR / "tracker.db")
-    print(conn.execute("SELECT COUNT(*) FROM status_history").fetchone())
-    print(conn.execute("SELECT * FROM status_history ORDER BY id DESC LIMIT 1").fetchall())
-    conn.close()
+    print("MIN: \n ",salary_distribution_by_lane(BASE_DIR / "tracker.db", "salary_min"))
+    print("MAX: \n ",salary_distribution_by_lane(BASE_DIR / "tracker.db", "salary_max"))
