@@ -249,6 +249,25 @@ def salary_distribution_by_lane(db_path, column="salary_min"):
     conn.close()
     return result
 
+def aging_applications(db_path, days=30):
+    conn = sqlite3.connect(db_path)
+    result = conn.execute("""
+        SELECT a.company, a.job_title, a.application_status,
+            COALESCE(h.last_change, a.date_submitted) AS last_change,
+            CAST(julianday(date('now')) - julianday(COALESCE(h.last_change, a.date_submitted)) AS INTEGER) AS days_aged
+        FROM applications a
+        LEFT JOIN (
+            SELECT application_id, MAX(observed_on) AS last_change
+            FROM status_history
+            GROUP BY application_id
+        ) h ON h.application_id = a.id
+        WHERE a.application_status NOT IN ('rejected', 'no_longer_considered')
+            AND days_aged >= ?
+        ORDER BY days_aged DESC
+    """, (days,)).fetchall()
+    conn.close()
+    return result
+
 if __name__ == "__main__":
     df = load_tracker(file_path)
     create_database(BASE_DIR / "tracker.db", BASE_DIR / "schema.sql")
@@ -257,5 +276,4 @@ if __name__ == "__main__":
     insert_applications(df, BASE_DIR / "tracker.db")
     sync_statuses(df, before, BASE_DIR / "tracker.db")
 
-    print("MIN: \n ",salary_distribution_by_lane(BASE_DIR / "tracker.db", "salary_min"))
-    print("MAX: \n ",salary_distribution_by_lane(BASE_DIR / "tracker.db", "salary_max"))
+    
