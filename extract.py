@@ -1,8 +1,8 @@
 import re
 import sqlite3
+import statistics
 from datetime import datetime, timezone
 from pathlib import Path
-import statistics
 
 import numpy as np
 import pandas as pd
@@ -297,4 +297,3 @@ if __name__ == "__main__":
     insert_applications(df, BASE_DIR / "tracker.db")
     sync_statuses(df, before, BASE_DIR / "tracker.db")
 
-    print("median_days: \n", median_days(BASE_DIR / "tracker.db"))
