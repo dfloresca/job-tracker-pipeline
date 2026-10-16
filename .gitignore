@@ -221,3 +221,5 @@ __marimo__/
 *.xlsx
 *.db
 data/
+*.db
+daylog.md

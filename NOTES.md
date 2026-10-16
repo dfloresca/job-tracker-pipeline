@@ -15,3 +15,8 @@ pd.set_option('display.width', 0)
     *   Future goal: add a differentiator for pay basis for salary vs hourly
 *   Status come through with the dot(type of emoji)
     *   This will affect sorting as well as the emojis would group together.
+    * pd.notna()/is not None doesn't catch NaT reliably after a blanket .where() across
+  mixed-dtype columns. Fixed by checking pd.isna(x) instead of x is not None when
+  converting datetime columns to strings for SQLite insert.
+
+  * Days aged and median days are calculated using observed on (When the status change was observed by the query) and may not represent the actual date the change happened

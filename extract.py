@@ -2,6 +2,7 @@ import re
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+import statistics
 
 import numpy as np
 import pandas as pd
@@ -268,6 +269,26 @@ def aging_applications(db_path, days=30):
     conn.close()
     return result
 
+def median_days(db_path):
+    # median query calculates median days from submission to first status change 
+    conn = sqlite3.connect(db_path)
+    result = conn.execute("""
+        SELECT a.company, a.job_title, a.application_status,
+            CAST(julianday(h.first_change) - julianday(a.date_submitted) AS INTEGER) AS days_to_first_change
+        FROM applications a
+        JOIN (
+            SELECT application_id, MIN(observed_on) AS first_change -- Min keeps this correct once an app has multiple history rows
+            FROM status_history
+            GROUP BY application_id
+        ) h ON h.application_id = a.id
+    """).fetchall()
+    conn.close()
+
+    days = [row[3] for row in result if row[3] is not None]
+    median = statistics.median(days) if days else None # SQLite does not have a built-in median function, so we calculate it in Python
+
+    return median, len(days)
+
 if __name__ == "__main__":
     df = load_tracker(file_path)
     create_database(BASE_DIR / "tracker.db", BASE_DIR / "schema.sql")
@@ -276,4 +297,4 @@ if __name__ == "__main__":
     insert_applications(df, BASE_DIR / "tracker.db")
     sync_statuses(df, before, BASE_DIR / "tracker.db")
 
-    
+    print("median_days: \n", median_days(BASE_DIR / "tracker.db"))
