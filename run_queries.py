@@ -1,5 +1,7 @@
 from pprint import pprint
 
+from datetime import date
+
 from extract import (
     BASE_DIR,
     aging_applications,
@@ -49,6 +51,7 @@ def gather_results(db_path):
 
     return {
         "total_applications": total_applications,
+        "status_breakdown": dict(status_rows),
         "lane_response_rate": lane_rates,
         "employer_type_response_rate": employer_rates,
         "salary_distribution_by_lane": salary_rows,
@@ -56,7 +59,36 @@ def gather_results(db_path):
         "median_days": median_rows
     }
 
+def render_report(results):
+    today = date.today().isoformat()
+
+    total_apps = results["total_applications"]
+
+    received_count = results["status_breakdown"].get("application_received", 0)
+    total_responded = total_apps - received_count
+    overall_rate = calc_rate(total_responded, total_apps)
+
+    med_info = results["median_days"]
+    median_val = med_info["median"]
+    median_n = med_info["count"]
+
+    if median_val is not None:
+        median_str = f"{median_val} days (n={median_n})"
+    else:
+        median_str = f"N/A (n={median_n})"
+
+    report = "\n".join([
+        "# JOB SEARCH PIPELINE REPORT",
+        "",
+        f"Generated on: {today}",
+        "",
+        f"- **Total applications {total_apps}",
+        f"- **Moved past received {total_responded} ({overall_rate}%)",
+        f"- **Median to first change: {median_str}",
+        ]
+    )
+
+    return report
 
 if __name__ == "__main__":
-    print("Run 5")
-    pprint(gather_results(DB_PATH))
+    print(render_report(gather_results(DB_PATH)))
