@@ -77,14 +77,20 @@ def render_report(results):
     else:
         median_str = f"N/A (n={median_n})"
 
+    lines = ["| Status | Count |", "|---|---|"]
+    lines += [f"| {status} | {n} |" for status, n in results["status_breakdown"].items()]
+    table = "\n".join(lines)
+
     report = "\n".join([
         "# JOB SEARCH PIPELINE REPORT",
         "",
         f"Generated on: {today}",
         "",
-        f"- **Total applications {total_apps}",
-        f"- **Moved past received {total_responded} ({overall_rate}%)",
-        f"- **Median to first change: {median_str}",
+        f"- **Total applications** {total_apps}",
+        f"- **Moved past received** {total_responded} ({overall_rate}%)",
+        f"- **Median to first change:** {median_str}",
+        "",
+        table
         ]
     )
 
