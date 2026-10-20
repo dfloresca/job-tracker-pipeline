@@ -62,15 +62,26 @@ def gather_results(db_path):
 STATUS_ORDER = ["application_received", "in_review", "sme_review", "rejected", "no_longer_considered"]
 
 def render_funnel_table(status_counts, total):
-    lines = ["| Status | Count | Share |", "|---|---|---|"]
+    lines = ["## Funnel Table", "", 
+             "| Status | Count | Share |", "|---|---|---|"]
     ordered = STATUS_ORDER + [s for s in status_counts if s not in STATUS_ORDER]
     counted = 0
     for status in ordered:
         n = status_counts.get(status, 0)
         lines.append(f"| {status.replace('_', ' ')} | {n} | {calc_rate(n, total)}% |")
         counted += n
-    lines.append(f"| **Total** | {counted} | {calc_rate(counted, total)} %|")
+    lines.append(f"| **Total** | {counted} | {calc_rate(counted, total)}% |")
     return "\n".join(lines)
+
+def render_rate_table(heading, label, rows):
+    lines = [f"## {heading}", "",
+             f"| {label} | Applications | Moved past received | Rate |",
+             "| --- | --- | --- | --- |"]
+    for row in rows:
+        rate = "-" if row["rate"] is None else f"{row['rate']}%"
+        lines.append(f"| {row['name']} | {row['total']} | {row['responded']} | {rate} |")
+    return "\n".join(lines)
+
 
 def render_report(results):
     today = date.today().isoformat()
@@ -99,7 +110,11 @@ def render_report(results):
         f"- **Moved past received** {total_responded} ({overall_rate}%)",
         f"- **Median to first change:** {median_str}",
         "",
-        render_funnel_table(results['status_breakdown'], total_apps)
+        render_funnel_table(results['status_breakdown'], total_apps),
+        "",
+        render_rate_table("Lane Response Rate", "Lane", results['lane_response_rate']),
+        "",
+        render_rate_table("Employer Type Response Rate", "Employer Type", results['employer_type_response_rate'])
         ]
     )
 
