@@ -59,6 +59,19 @@ def gather_results(db_path):
         "median_days": median_rows
     }
 
+STATUS_ORDER = ["application_received", "in_review", "sme_review", "rejected", "no_longer_considered"]
+
+def render_funnel_table(status_counts, total):
+    lines = ["| Status | Count | Share |", "|---|---|---|"]
+    ordered = STATUS_ORDER + [s for s in status_counts if s not in STATUS_ORDER]
+    counted = 0
+    for status in ordered:
+        n = status_counts.get(status, 0)
+        lines.append(f"| {status.replace('_', ' ')} | {n} | {calc_rate(n, total)}% |")
+        counted += n
+    lines.append(f"| **Total** | {counted} | {calc_rate(counted, total)} %|")
+    return "\n".join(lines)
+
 def render_report(results):
     today = date.today().isoformat()
 
@@ -77,10 +90,6 @@ def render_report(results):
     else:
         median_str = f"N/A (n={median_n})"
 
-    lines = ["| Status | Count |", "|---|---|"]
-    lines += [f"| {status} | {n} |" for status, n in results["status_breakdown"].items()]
-    table = "\n".join(lines)
-
     report = "\n".join([
         "# JOB SEARCH PIPELINE REPORT",
         "",
@@ -90,7 +99,7 @@ def render_report(results):
         f"- **Moved past received** {total_responded} ({overall_rate}%)",
         f"- **Median to first change:** {median_str}",
         "",
-        table
+        render_funnel_table(results['status_breakdown'], total_apps)
         ]
     )
 
