@@ -1,4 +1,3 @@
-from pprint import pprint
 
 from datetime import date
 
@@ -13,6 +12,7 @@ from extract import (
 )
 
 DB_PATH = BASE_DIR / "tracker.db"
+REPORT_PATH = BASE_DIR / "reports" / "report.md"
 
 def calc_rate(responded, total):
     return round((responded / total) * 100, 1) if total > 0 else None
@@ -120,5 +120,11 @@ def render_report(results):
 
     return report
 
+def write_report(text, path):
+    path.parent.mkdir(parents=True, exist_ok=True)   # make the folder
+    path.write_text(text.rstrip("\n") + "\n", encoding="utf-8")          # write (or overwrite) the file
+
 if __name__ == "__main__":
-    print(render_report(gather_results(DB_PATH)))
+    report_text = render_report(gather_results(DB_PATH))
+    write_report(report_text, REPORT_PATH)
+    print(f"Report written to {REPORT_PATH}")
