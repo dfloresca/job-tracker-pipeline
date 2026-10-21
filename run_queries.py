@@ -2,7 +2,7 @@
 from datetime import date
 
 from extract import (
-    BASE_DIR,
+    DB_PATH,
     aging_applications,
     employer_type_response_rate,
     lane_response_rate,
@@ -11,7 +11,6 @@ from extract import (
     status_breakdown,
 )
 
-DB_PATH = BASE_DIR / "tracker.db"
 REPORT_PATH = BASE_DIR / "reports" / "report.md"
 
 def calc_rate(responded, total):

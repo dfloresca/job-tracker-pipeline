@@ -9,7 +9,9 @@ import pandas as pd
 
 BASE_DIR = Path(__file__).resolve().parent
 
-file_path = BASE_DIR / "data" / "Washington_Job_tracker_v2_9_19_1.xlsx"
+TRACKER_PATH = BASE_DIR / "data" / "Washington_Job_tracker_v2_9_19_1.xlsx"
+DB_PATH = BASE_DIR / "tracker.db"
+SCHEMA_PATH = BASE_DIR / "schema.sql"
 
 HOURS_PER_YEAR = 2080
 
@@ -290,10 +292,10 @@ def median_days(db_path):
     return median, len(days)
 
 if __name__ == "__main__":
-    df = load_tracker(file_path)
-    create_database(BASE_DIR / "tracker.db", BASE_DIR / "schema.sql")
+    df = load_tracker(TRACKER_PATH)
+    create_database(DB_PATH, SCHEMA_PATH)
     
-    before = get_all_stored_statuses(BASE_DIR / "tracker.db")
-    insert_applications(df, BASE_DIR / "tracker.db")
-    sync_statuses(df, before, BASE_DIR / "tracker.db")
+    before = get_all_stored_statuses(DB_PATH)
+    insert_applications(df, DB_PATH)
+    sync_statuses(df, before, DB_PATH)
 
