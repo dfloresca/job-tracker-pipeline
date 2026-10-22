@@ -1,6 +1,7 @@
+import pandas as pd
 import pytest
 
-from extract import parse_salary
+from extract import normalize_status, parse_salary
 
 
 @pytest.mark.parametrize("text, expected", [
@@ -19,3 +20,14 @@ def test_parse_salary_blank():
 def test_parse_salary_no_number():
     with pytest.raises(ValueError):
         parse_salary("Competitive")
+
+@pytest.mark.parametrize("text, expected", [
+    ("Application Received", "application_received"),
+    (" Rejected ", "rejected"),
+    ("✅ In Review", "in_review"),
+    ("Under SME Review", "sme_review"),
+    ("SME Review", "sme_review")
+])
+def test_normalize_status(text, expected):
+    result = normalize_status(pd.Series([text]))
+    assert result.iloc[0] == expected
