@@ -31,3 +31,7 @@ def test_parse_salary_no_number():
 def test_normalize_status(text, expected):
     result = normalize_status(pd.Series([text]))
     assert result.iloc[0] == expected
+
+def test_normalize_status_unmapped():
+    with pytest.raises(ValueError):
+        normalize_status(pd.Series(["Ghosted"]))
