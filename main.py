@@ -1,10 +1,8 @@
 import argparse
 from pathlib import Path
 
+from config import DB_PATH, REPORT_PATH, SCHEMA_PATH, TRACKER_PATH
 from extract import (
-    DB_PATH,
-    SCHEMA_PATH,
-    TRACKER_PATH,
     create_database,
     get_all_stored_statuses,
     insert_applications,
@@ -12,7 +10,6 @@ from extract import (
     sync_statuses,
 )
 from run_queries import (
-    REPORT_PATH,
     gather_results,
     render_report,
     write_report,
