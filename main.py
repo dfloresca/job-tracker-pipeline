@@ -1,8 +1,17 @@
 import argparse
 from pathlib import Path
 
-from run_queries import (
+from extract import (
     DB_PATH,
+    SCHEMA_PATH,
+    TRACKER_PATH,
+    create_database,
+    get_all_stored_statuses,
+    insert_applications,
+    load_tracker,
+    sync_statuses,
+)
+from run_queries import (
     REPORT_PATH,
     gather_results,
     render_report,
@@ -15,23 +24,37 @@ def main():
     sub = parser.add_subparsers(dest="command", required=True)
 
     run = sub.add_parser("run", help="load tracker spreadsheet into the database")
-    run.add_argument("--db", type=Path, default="loading tracker into database")
+    run.add_argument("--file", type=Path, default=TRACKER_PATH,
+                     help="path to tracker file (default: %(default)s)")
+    run.add_argument("--schema", type=Path, default=SCHEMA_PATH, 
+                     help="path to sql schema (default: %(default)s)")
+    run.add_argument("--db", type=Path, default=DB_PATH,
+                    help="path to the SQLite database (default: %(default)s)")
 
-    report = sub.add_parser("report", help="load data into report.md")
+
+    report = sub.add_parser("report", help="write data into report.md")
     report.add_argument("--output", type=Path, default=REPORT_PATH,
                     help="where to write the report (default: %(default)s)")
     report.add_argument("--db", type=Path, default=DB_PATH,
                     help="path to the SQLite database (default: %(default)s)")
 
     args = parser.parse_args()
-    if args.command == "report":
+    if args.command == "run":
+        if not args.file.exists():
+            parser.error(f"tracker not found: {args.file}")
+        df = load_tracker(args.file)
+        create_database(args.db, args.schema)
+        before = get_all_stored_statuses(args.db)
+        insert_applications(df, args.db)
+        sync_statuses(df, before, args.db)
+        print(f"Loaded {len(df)} applications into {args.db}")
+    elif args.command == "report":
         if not args.db.exists():
             parser.error(f"database not found: {args.db}")
         text = render_report(gather_results(args.db))
         write_report(text, args.output)
         print(f"Report written to {args.output}")
-    elif args.command == "run":
-        print("run: not wired yet")
+    
 
 if __name__ == "__main__":
     main()
