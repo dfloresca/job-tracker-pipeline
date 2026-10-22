@@ -1,7 +1,7 @@
 import re
 import sqlite3
 import statistics
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 
 import numpy as np
 import pandas as pd
@@ -164,7 +164,7 @@ def sync_statuses(df, before, db_path):
         if old is not None:
             application_id, old_status = old
             if old_status != row.application_status:
-                observed_on = datetime.now(timezone.utc).date().isoformat()
+                observed_on = datetime.now(UTC).date().isoformat()
                 insert_status_change(db_path, application_id, row.application_status, observed_on)
 
 def insert_applications(df, db_path):
