@@ -2,16 +2,11 @@ import re
 import sqlite3
 import statistics
 from datetime import datetime, timezone
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-BASE_DIR = Path(__file__).resolve().parent
-
-TRACKER_PATH = BASE_DIR / "data" / "Washington_Job_tracker_v2_9_19_1.xlsx"
-DB_PATH = BASE_DIR / "tracker.db"
-SCHEMA_PATH = BASE_DIR / "schema.sql"
+from config import DB_PATH, SCHEMA_PATH, TRACKER_PATH
 
 HOURS_PER_YEAR = 2080
 
