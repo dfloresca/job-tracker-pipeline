@@ -1,8 +1,6 @@
-from pathlib import Path
-
 import pandas as pd
 
-BASE_DIR = Path(__file__).resolve().parent
+from config import BASE_DIR
 
 file_path = BASE_DIR / "data" / "Washington_Job_tracker_v2_9_19_1.xlsx"
 
