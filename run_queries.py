@@ -1,8 +1,8 @@
 
 from datetime import date
 
+from config import DB_PATH, REPORT_PATH
 from extract import (
-    DB_PATH,
     aging_applications,
     employer_type_response_rate,
     lane_response_rate,
@@ -11,7 +11,6 @@ from extract import (
     status_breakdown,
 )
 
-REPORT_PATH = BASE_DIR / "reports" / "report.md"
 
 def calc_rate(responded, total):
     return round((responded / total) * 100, 1) if total > 0 else None
