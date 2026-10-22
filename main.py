@@ -1,4 +1,5 @@
 import argparse
+import logging
 from pathlib import Path
 
 from config import DB_PATH, REPORT_PATH, SCHEMA_PATH, TRACKER_PATH
@@ -15,8 +16,10 @@ from run_queries import (
     write_report,
 )
 
+logger = logging.getLogger(__name__)
 
 def main():
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="main")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -44,13 +47,13 @@ def main():
         before = get_all_stored_statuses(args.db)
         insert_applications(df, args.db)
         sync_statuses(df, before, args.db)
-        print(f"Loaded {len(df)} applications into {args.db}")
+        logger.info("Loaded %d applications into %s", len(df), args.db)
     elif args.command == "report":
         if not args.db.exists():
             parser.error(f"database not found: {args.db}")
         text = render_report(gather_results(args.db))
         write_report(text, args.output)
-        print(f"Report written to {args.output}")
+        logger.info("Report written to %s", args.output)
     
 
 if __name__ == "__main__":
