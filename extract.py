@@ -77,7 +77,8 @@ def classify_close_date(series):
 def extract_first_range(text):
     # Strip anything in parenthesis first so it can't interfere
     no_parens = re.sub(r"\(.*?\)", "", text)
-    numbers = re.findall(r"[\d,]+\.?\d*", no_parens)
+    pattern = r"\$\s*(\d[\d,]*(?:\.\d+)?)"
+    numbers = re.findall(pattern, no_parens)
     return numbers[:2] # first two numbers found = the primary range
 
 def detect_pay_basis(text):
@@ -85,7 +86,7 @@ def detect_pay_basis(text):
     # first make the text lowercase for case-insensitive matching
     text_lower = text.lower()
     # check for keywords that indicate an hourly rate
-    if any(keyword in text_lower for keyword in ["hr"]):
+    if any(keyword in text_lower for keyword in ["/hr", "/hour", "per hour", "hourly"]):
         return "hourly"
     else:
         return "annual"
