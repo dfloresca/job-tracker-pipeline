@@ -15,7 +15,6 @@ from run_queries import (
     render_report,
     write_report,
 )
-
 from validate import validate_tracker
 
 logger = logging.getLogger(__name__)
