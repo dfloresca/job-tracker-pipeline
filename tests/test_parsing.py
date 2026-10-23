@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from extract import normalize_status, parse_salary
+from extract import classify_close_date, normalize_status, parse_salary
 
 
 @pytest.mark.parametrize("text, expected", [
@@ -9,7 +9,7 @@ from extract import normalize_status, parse_salary
     ("$40/hr - $50/hr", (83200.0, 104000.0, "hourly")),
     ("$95,000", (95000.0, 95000.0, "annual")),
     ("$90,000 (up to $120,000 with experience)", (90000.0, 90000.0, "annual")),
-    ("$35/hr", (72800.0, 72800.0, "hourly"))
+    ("$35/hr", (72800.0, 72800.0, "hourly")),
 ])
 def test_parse_salary(text, expected):
     assert parse_salary(text) == expected
@@ -35,3 +35,13 @@ def test_normalize_status(text, expected):
 def test_normalize_status_unmapped():
     with pytest.raises(ValueError):
         normalize_status(pd.Series(["Ghosted"]))
+
+@pytest.mark.parametrize("text, expected", [
+    ("Continuous", "continuous"),
+    ("  continuous", "continuous"),
+    ("2026-09-30", "dated"),
+    (None, "unknown"),
+])
+def test_classify_close_date(text, expected):
+    result = classify_close_date(pd.Series([text]))
+    assert result.iloc[0] == expected
