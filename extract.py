@@ -1,7 +1,7 @@
 import re
 import sqlite3
 import statistics
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime
 
 import numpy as np
 import pandas as pd
