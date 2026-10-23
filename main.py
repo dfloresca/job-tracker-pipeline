@@ -16,6 +16,8 @@ from run_queries import (
     write_report,
 )
 
+from validate import validate_tracker
+
 logger = logging.getLogger(__name__)
 
 def main():
@@ -43,6 +45,7 @@ def main():
         if not args.file.exists():
             parser.error(f"tracker not found: {args.file}")
         df = load_tracker(args.file)
+        validate_tracker(df)
         create_database(args.db, args.schema)
         before = get_all_stored_statuses(args.db)
         insert_applications(df, args.db)
