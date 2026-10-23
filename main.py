@@ -27,11 +27,10 @@ def main():
     run = sub.add_parser("run", help="load tracker spreadsheet into the database")
     run.add_argument("--file", type=Path, default=TRACKER_PATH,
                      help="path to tracker file (default: %(default)s)")
-    run.add_argument("--schema", type=Path, default=SCHEMA_PATH, 
+    run.add_argument("--schema", type=Path, default=SCHEMA_PATH,
                      help="path to sql schema (default: %(default)s)")
     run.add_argument("--db", type=Path, default=DB_PATH,
                     help="path to the SQLite database (default: %(default)s)")
-
 
     report = sub.add_parser("report", help="write data into report.md")
     report.add_argument("--output", type=Path, default=REPORT_PATH,
@@ -57,6 +56,5 @@ def main():
         write_report(text, args.output)
         logger.info("Report written to %s", args.output)
     
-
 if __name__ == "__main__":
     main()
