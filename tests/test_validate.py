@@ -16,3 +16,8 @@ def test_valid_frame_passes():
 def test_missing_company_is_reported():
     with pytest.raises(ValueError, match="company"):
         validate_tracker(make_df(company=None))
+
+def test_duplicate_key_is_reported():
+    df = pd.concat([make_df(), make_df()], ignore_index=True)
+    with pytest.raises(ValueError, match="duplicate"):
+        validate_tracker(df)
