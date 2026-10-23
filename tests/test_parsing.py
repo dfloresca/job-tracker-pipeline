@@ -10,6 +10,9 @@ from extract import classify_close_date, normalize_status, parse_salary
     ("$95,000", (95000.0, 95000.0, "annual")),
     ("$90,000 (up to $120,000 with experience)", (90000.0, 90000.0, "annual")),
     ("$35/hr", (72800.0, 72800.0, "hourly")),
+    ("$35 per hour", (72800.0, 72800.0, "hourly")),
+    ("$35/hr, 40 hrs/week", (72800.0, 72800.0, "hourly")),
+    ("$105,000 per year, 40 hr/week", (105000.0, 105000.0, "annual"))    
 ])
 def test_parse_salary(text, expected):
     assert parse_salary(text) == expected
