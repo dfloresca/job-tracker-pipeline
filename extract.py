@@ -1,3 +1,5 @@
+import json
+import logging
 import re
 import sqlite3
 import statistics
@@ -6,7 +8,15 @@ from datetime import UTC, datetime
 import numpy as np
 import pandas as pd
 
-from config import DB_PATH, SCHEMA_PATH, TRACKER_PATH
+from config import (
+    DB_PATH,
+    EMPLOYER_TYPES_EXAMPLE_PATH,
+    EMPLOYER_TYPES_PATH,
+    SCHEMA_PATH,
+    TRACKER_PATH,
+)
+
+logger = logging.getLogger(__name__)
 
 HOURS_PER_YEAR = 2080
 
@@ -19,11 +29,18 @@ def create_database(db_path, schema_path):
     conn.commit()
     conn.close()
 
-def classify_employer(company):
+def load_employer_rules(real_path=EMPLOYER_TYPES_PATH, example_path=EMPLOYER_TYPES_EXAMPLE_PATH):
+    path = real_path if real_path.exists() else example_path
+    logger.info("Employer rules %s", path)
+    with path.open(encoding="utf-8") as f:
+        rules = json.load(f)
+    return rules
+
+def classify_employer(company, rules):
     c = company.lower()
-    if c.startswith(("king county", "city of seattle", "port of seattle", "snohomish county pud", "sound transit")):
+    if c.startswith(tuple(rules["public"])):
         return "public"
-    if c.startswith(("archdiocese", "providence", "fred hutchinson", "kaiser permanente", "premera blue cross", "cambia")):
+    if c.startswith(tuple(rules["nonprofit"])):
         return "nonprofit"
     else:
         return "private"
