@@ -10,6 +10,14 @@ def make_df(**overrides):
     row.update(overrides)
     return pd.DataFrame([row])
 
+def test_empty_frame_is_reported():
+    with pytest.raises(ValueError, match="no rows"):
+        validate_tracker(make_df().iloc[0:0])
+
+def test_missing_column_is_reported():
+    with pytest.raises(ValueError, match="salary_min"):
+        validate_tracker(make_df().drop(columns=["salary_min"]))
+
 def test_valid_frame_passes():
     validate_tracker(make_df())
 

@@ -137,7 +137,6 @@ def load_tracker(path):
     df_combined["salary_max"] = pd.to_numeric(df_combined["salary_max"], errors="coerce")
     df_combined["employer_type"] = df_combined["company"].apply(classify_employer)    
     
-    assert len(df_combined) == 40, f"expected 40 rows, got {len(df_combined)}"
     return df_combined
 
 def get_all_stored_statuses(db_path):

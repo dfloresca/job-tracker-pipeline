@@ -5,10 +5,19 @@ logger = logging.getLogger(__name__)
 REQUIRED_COLUMNS = ["company", "job_title", "date_submitted", "application_status"]
 # must match schema'
 KEY_COLUMNS = ["company", "job_title", "date_submitted"]
+# columns validate_tracker reads; keep in sync with the checks below
+VALIDATED_COLUMNS = REQUIRED_COLUMNS + KEY_COLUMNS + ["salary_min", "salary_max", "source_sheet"]
 
 def validate_tracker(df):
     """Raise ValueError listing every problem found; return None if data is clean"""
     problems = []
+
+    #check 0
+    missing = [col for col in VALIDATED_COLUMNS if col not in df.columns]
+    if missing:
+        raise ValueError(f"Tracker is missing required columns: {missing}")
+    if df.empty:
+        raise ValueError("Tracker has no rows")
 
     #check 1: required fields are present
     for col in REQUIRED_COLUMNS:
