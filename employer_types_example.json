@@ -1,0 +1,11 @@
+{"public": [
+    "example county",
+    "example government",
+    "example transit",
+    "example utility"
+],
+"nonprofit": [
+    "sample medical system",
+    "sample religious institution",
+    "sample insurance company"
+]}
