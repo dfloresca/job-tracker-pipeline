@@ -18,3 +18,7 @@ def test_rules_fall_back_to_example(tmp_path):
     example = tmp_path / "example.json"
     example.write_text('{"public": ["example"], "nonprofit": []}', encoding="utf-8")
     assert load_employer_rules(tmp_path / "missing.json", example)["public"] == ["example"]
+
+def test_classify_employer_blank_company():
+    # a blank cell arrives as NAN; the validator reports it, so classification must not crash
+    assert classify_employer(float("nan"), RULES) == "private"

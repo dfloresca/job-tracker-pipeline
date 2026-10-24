@@ -31,13 +31,13 @@ def create_database(db_path, schema_path):
 
 def load_employer_rules(real_path=EMPLOYER_TYPES_PATH, example_path=EMPLOYER_TYPES_EXAMPLE_PATH):
     path = real_path if real_path.exists() else example_path
-    logger.info("Employer rules %s", path)
+    logger.info("Employer rules: %s", path)
     with path.open(encoding="utf-8") as f:
         rules = json.load(f)
     return rules
 
 def classify_employer(company, rules):
-    c = company.lower()
+    c = str(company).lower()
     if c.startswith(tuple(rules["public"])):
         return "public"
     if c.startswith(tuple(rules["nonprofit"])):
@@ -152,7 +152,8 @@ def load_tracker(path):
     df_combined[["salary_min", "salary_max", "salary_pay_basis"]] =(df_combined["posted_salary_range"].apply(parse_salary).tolist())
     df_combined["salary_min"] = pd.to_numeric(df_combined["salary_min"], errors="coerce")
     df_combined["salary_max"] = pd.to_numeric(df_combined["salary_max"], errors="coerce")
-    df_combined["employer_type"] = df_combined["company"].apply(classify_employer)    
+    rules = load_employer_rules()
+    df_combined["employer_type"] = df_combined["company"].apply(lambda c: classify_employer(c, rules))
     
     return df_combined
 

@@ -20,3 +20,9 @@ pd.set_option('display.width', 0)
   converting datetime columns to strings for SQLite insert.
 
   * Days aged and median days are calculated using observed on (When the status change was observed by the query) and may not represent the actual date the change happened
+
+  * Print is the output the user asked for and logger.info is what the program did
+
+  * validate_tracker will exist as it's own function 
+
+  * The tracker will announce rejected rows but still 
