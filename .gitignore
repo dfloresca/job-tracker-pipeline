@@ -224,3 +224,4 @@ data/
 *.db
 daylog.md
 reports/
+employer_types.json
