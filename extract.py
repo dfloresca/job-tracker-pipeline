@@ -304,11 +304,3 @@ def median_days(db_path):
 
     return median, len(days)
 
-if __name__ == "__main__":
-    df = load_tracker(TRACKER_PATH)
-    create_database(DB_PATH, SCHEMA_PATH)
-    
-    before = get_all_stored_statuses(DB_PATH)
-    insert_applications(df, DB_PATH)
-    sync_statuses(df, before, DB_PATH)
-
