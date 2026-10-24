@@ -19,8 +19,10 @@ def validate_tracker(df):
     for i in df.index[df.duplicated(subset=KEY_COLUMNS, keep=False)]:
         problems.append(f"{df.loc[i, 'source_sheet']}: duplicate Application: {df.loc[i, 'company']} / {df.loc[i, 'job_title']} / {df.loc[i, 'date_submitted']}")
 
+    # check 3: salary range is not inverted (rows with no salary compare as False, so they are skipped)
+    for i in df.index[df["salary_min"] > df["salary_max"]]:
+        problems.append(f"{df.loc[i, 'source_sheet']}: salary range is inverted: {df.loc[i, 'company']} / {df.loc[i, 'job_title']} / {df.loc[i, 'salary_min']} > {df.loc[i, 'salary_max']}")
+
     if problems:
         logger.error("%d validation problem(s) found", len(problems))
         raise ValueError("Tracker validation failed: \n" + "\n".join(problems))
-
-
