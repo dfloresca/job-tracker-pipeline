@@ -149,6 +149,9 @@ df_archived = pd.DataFrame(ARCHIVED_DATA, columns=COLUMNS)
 # Export using openpyxl engine
 target_path = Path("data/sample_tracker.xlsx")
 
+df_active["Date Submitted"] = pd.to_datetime(df_active["Date Submitted"], format="mixed")
+df_archived["Date Submitted"] = pd.to_datetime(df_archived["Date Submitted"], format="mixed")
+
 with pd.ExcelWriter(target_path, engine="openpyxl") as writer:
     df_active.to_excel(writer, sheet_name="Active Applications", index=False)
     df_archived.to_excel(writer, sheet_name="Archived Applications", index=False)
