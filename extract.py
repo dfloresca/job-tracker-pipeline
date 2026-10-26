@@ -52,10 +52,12 @@ def normalize_status(series):
     mapping = {
         "Application Received": "application_received",
         "In Review": "in_review",
+        "Under Review": "in_review",
         "Under SME Review": "sme_review",
         "SME Review": "sme_review",
         "HR Review": "hr_review",
         "Panel Review": "panel_review",
+        "Offer": "offer", 
         "No Response": "no_response",
         "Rejected": "rejected",
         "No Longer Considered": "no_longer_considered",
