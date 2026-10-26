@@ -220,7 +220,8 @@ __marimo__/
 # local data
 *.xlsx
 *.db
-data/
+data/*
+!data/sample_tracker.xlsx
 *.db
 daylog.md
 reports/
