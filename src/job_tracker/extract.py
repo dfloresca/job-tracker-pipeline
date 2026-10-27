@@ -9,11 +9,8 @@ import numpy as np
 import pandas as pd
 
 from src.job_tracker.config import (
-    DB_PATH,
     EMPLOYER_TYPES_EXAMPLE_PATH,
     EMPLOYER_TYPES_PATH,
-    SCHEMA_PATH,
-    TRACKER_PATH,
 )
 
 logger = logging.getLogger(__name__)

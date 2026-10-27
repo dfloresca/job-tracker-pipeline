@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from pandas import ExcelWriter
-
 import pandas as pd
 
 COLUMNS = ["Job Title", "Company", "Req #", "Date Submitted", "Posting Close Date", "Posted Salary Range", "Fit Lane", "Application Status", "Days Since Submitted", "Next Steps / Action Items", "Notes"]
