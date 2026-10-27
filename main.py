@@ -2,20 +2,20 @@ import argparse
 import logging
 from pathlib import Path
 
-from config import DB_PATH, REPORT_PATH, SCHEMA_PATH, TRACKER_PATH
-from extract import (
+from run_queries import (
+    gather_results,
+    render_report,
+    write_report,
+)
+from src.job_tracker.config import DB_PATH, REPORT_PATH, SCHEMA_PATH, TRACKER_PATH
+from src.job_tracker.extract import (
     create_database,
     get_all_stored_statuses,
     insert_applications,
     load_tracker,
     sync_statuses,
 )
-from run_queries import (
-    gather_results,
-    render_report,
-    write_report,
-)
-from validate import validate_tracker
+from src.job_tracker.validate import validate_tracker
 
 logger = logging.getLogger(__name__)
 

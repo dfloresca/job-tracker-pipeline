@@ -1,6 +1,6 @@
 import pandas as pd
 
-from config import TRACKER_PATH
+from src.job_tracker.config import TRACKER_PATH
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_colwidth', None)

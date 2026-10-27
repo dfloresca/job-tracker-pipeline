@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 import numpy as np
 import pandas as pd
 
-from config import (
+from src.job_tracker.config import (
     DB_PATH,
     EMPLOYER_TYPES_EXAMPLE_PATH,
     EMPLOYER_TYPES_PATH,

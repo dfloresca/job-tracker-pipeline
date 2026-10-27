@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from validate import validate_tracker
+from src.job_tracker.validate import validate_tracker
 
 
 def make_df(**overrides):

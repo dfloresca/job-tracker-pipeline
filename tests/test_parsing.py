@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from extract import classify_close_date, normalize_status, parse_salary
+from src.job_tracker.extract import classify_close_date, normalize_status, parse_salary
 
 
 @pytest.mark.parametrize("text, expected", [

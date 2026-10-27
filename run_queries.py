@@ -1,8 +1,8 @@
 
 from datetime import date
 
-from config import DB_PATH, REPORT_PATH
-from extract import (
+from src.job_tracker.config import DB_PATH, REPORT_PATH
+from src.job_tracker.extract import (
     aging_applications,
     employer_type_response_rate,
     lane_response_rate,

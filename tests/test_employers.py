@@ -1,4 +1,4 @@
-from extract import classify_employer, load_employer_rules
+from src.job_tracker.extract import classify_employer, load_employer_rules
 
 RULES = {"public": ["example county"], "nonprofit": ["sample medical"]}
 
