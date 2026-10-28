@@ -1,9 +1,6 @@
 import json
 import logging
 import re
-import sqlite3
-import statistics
-from datetime import UTC, datetime
 
 import numpy as np
 import pandas as pd
@@ -16,15 +13,6 @@ from src.job_tracker.config import (
 logger = logging.getLogger(__name__)
 
 HOURS_PER_YEAR = 2080
-
-def create_database(db_path, schema_path):
-    """Create a SQLite database at db_path using the schema in schema_path"""
-    with open(schema_path) as f:
-        schema = f.read()
-    conn = sqlite3.connect(db_path)
-    conn.executescript(schema)
-    conn.commit()
-    conn.close()
 
 def load_employer_rules(real_path=EMPLOYER_TYPES_PATH, example_path=EMPLOYER_TYPES_EXAMPLE_PATH):
     path = real_path if real_path.exists() else example_path
@@ -156,150 +144,6 @@ def load_tracker(path):
     
     return df_combined
 
-def get_all_stored_statuses(db_path):
-    conn = sqlite3.connect(db_path)
-    rows = conn.execute("""
-        SELECT company, job_title, date_submitted, id, application_status FROM applications
-    """).fetchall()
-    conn.close()
-    return {(company, job_title, date_submitted): (app_id, status)
-            for company, job_title, date_submitted, app_id, status in rows}
 
-def insert_status_change(db_path, application_id, status, observed_on):
-    conn = sqlite3.connect(db_path)
-    conn.execute("""
-        INSERT INTO status_history (application_id, status, observed_on) VALUES (?, ?, ?)
-    """, (application_id, status, observed_on))
-    conn.commit()
-    conn.close() 
 
-def sync_statuses(df, before, db_path):
-    for row in df.itertuples():
-        key = (row.company, row.job_title, row.date_submitted.strftime("%Y-%m-%d"))
-        old = before.get(key)
-
-        if old is not None:
-            application_id, old_status = old
-            if old_status != row.application_status:
-                observed_on = datetime.now(UTC).date().isoformat()
-                insert_status_change(db_path, application_id, row.application_status, observed_on)
-
-def insert_applications(df, db_path):
-    """Insert the applications from the DataFrame into the applications table in the SQLite database."""
-    cols = ["job_title", "company", "req", "date_submitted", "posting_close_date",
-            "posted_salary_range", "fit_lane", "application_status",
-            "next_steps_action_items", "notes", "source_sheet", "close_date_status",
-            "salary_min", "salary_max", "salary_pay_basis", "employer_type"]
-    df_clean = df[cols].where(pd.notna(df[cols]), None)  # replace NaN with None for SQLite
-
-    for date_col in ["date_submitted", "posting_close_date"]:
-        df_clean[date_col] = df_clean[date_col].apply(lambda x: x.strftime("%Y-%m-%d") if not pd.isna(x) else None)
-    
-    rows = list(df_clean.itertuples(index=False, name=None))
-
-    placeholders = ", ".join(["?"] * len(cols))
-    col_names = ", ".join(cols)
-    sql = f"""
-    INSERT INTO applications ({col_names}) VALUES ({placeholders})
-        ON CONFLICT(company, job_title, date_submitted) DO UPDATE SET
-            req=excluded.req,
-            posting_close_date=excluded.posting_close_date,
-            posted_salary_range=excluded.posted_salary_range,
-            fit_lane=excluded.fit_lane,
-            application_status=excluded.application_status,
-            next_steps_action_items=excluded.next_steps_action_items,
-            notes=excluded.notes,
-            source_sheet=excluded.source_sheet,
-            close_date_status=excluded.close_date_status,
-            salary_min=excluded.salary_min,
-            salary_max=excluded.salary_max,
-            salary_pay_basis=excluded.salary_pay_basis,
-            employer_type=excluded.employer_type
-    """
-
-    conn = sqlite3.connect(db_path)
-    conn.executemany(sql, rows)
-    conn.commit()
-    conn.close()
-
-def status_breakdown(db_path):
-    conn = sqlite3.connect(db_path)
-    result = conn.execute("""
-        SELECT application_status, COUNT(*)
-        FROM applications
-        GROUP BY application_status
-    """).fetchall()
-    conn.close()
-    return result
-
-def lane_response_rate(db_path):
-    conn = sqlite3.connect(db_path)
-    result = conn.execute("""
-        SELECT fit_lane, COUNT(*) AS total_applications,
-            SUM(CASE WHEN application_status != 'application_received' THEN 1 Else 0 END) AS moved_past_received
-        FROM applications
-        GROUP BY fit_lane
-    """).fetchall()
-    conn.close()
-    return result
-
-def employer_type_response_rate(db_path):
-    conn = sqlite3.connect(db_path)
-    result = conn.execute("""
-        SELECT employer_type, COUNT(*) AS total_applications,
-            SUM(CASE WHEN application_status != 'application_received' THEN 1 Else 0 END) AS moved_past_received
-        FROM applications
-        GROUP BY employer_type
-    """).fetchall()
-    conn.close()
-    return result
-
-def salary_distribution_by_lane(db_path, column="salary_min"):
-    conn = sqlite3.connect(db_path)
-    result = conn.execute(f"""
-        SELECT fit_lane, MIN({column}) AS min_salary, AVG({column}) AS avg_salary, MAX({column}) AS max_salary
-        FROM applications
-        GROUP BY fit_lane
-    """).fetchall()
-    conn.close()
-    return result
-
-def aging_applications(db_path, days=30):
-    conn = sqlite3.connect(db_path)
-    result = conn.execute("""
-        SELECT a.company, a.job_title, a.application_status,
-            COALESCE(h.last_change, a.date_submitted) AS last_change,
-            CAST(julianday(date('now')) - julianday(COALESCE(h.last_change, a.date_submitted)) AS INTEGER) AS days_aged
-        FROM applications a
-        LEFT JOIN (
-            SELECT application_id, MAX(observed_on) AS last_change
-            FROM status_history
-            GROUP BY application_id
-        ) h ON h.application_id = a.id
-        WHERE a.application_status NOT IN ('rejected', 'no_longer_considered')
-            AND days_aged >= ?
-        ORDER BY days_aged DESC
-    """, (days,)).fetchall()
-    conn.close()
-    return result
-
-def median_days(db_path):
-    # median query calculates median days from submission to first status change 
-    conn = sqlite3.connect(db_path)
-    result = conn.execute("""
-        SELECT a.company, a.job_title, a.application_status,
-            CAST(julianday(h.first_change) - julianday(a.date_submitted) AS INTEGER) AS days_to_first_change
-        FROM applications a
-        JOIN (
-            SELECT application_id, MIN(observed_on) AS first_change -- Min keeps this correct once an app has multiple history rows
-            FROM status_history
-            GROUP BY application_id
-        ) h ON h.application_id = a.id
-    """).fetchall()
-    conn.close()
-
-    days = [row[3] for row in result if row[3] is not None]
-    median = statistics.median(days) if days else None # SQLite does not have a built-in median function, so we calculate it in Python
-
-    return median, len(days)
 
