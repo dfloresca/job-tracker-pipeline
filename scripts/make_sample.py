@@ -2,7 +2,19 @@ from pathlib import Path
 
 import pandas as pd
 
-COLUMNS = ["Job Title", "Company", "Req #", "Date Submitted", "Posting Close Date", "Posted Salary Range", "Fit Lane", "Application Status", "Days Since Submitted", "Next Steps / Action Items", "Notes"]
+COLUMNS = [
+    "Job Title",
+    "Company",
+    "Req #",
+    "Date Submitted",
+    "Posting Close Date",
+    "Posted Salary Range",
+    "Fit Lane",
+    "Application Status",
+    "Days Since Submitted",
+    "Next Steps / Action Items",
+    "Notes",
+]
 
 ACTIVE_DATA = [
     {
@@ -16,7 +28,7 @@ ACTIVE_DATA = [
         "Application Status": "🟡 In Review",
         "Days Since Submitted": "1",
         "Next Steps / Action Items": "Follow up with HR",
-        "Notes": "Designing new products for Wayne enterprises"
+        "Notes": "Designing new products for Wayne enterprises",
     },
     {
         "Job Title": "Financial Data Engineer",
@@ -29,7 +41,7 @@ ACTIVE_DATA = [
         "Application Status": "🟡 In Review",
         "Days Since Submitted": "11",
         "Next Steps / Action Items": "Prepare for technical round focusing on SQL optimizations and automated ledger reconciliation on November 2nd.",
-        "Notes": "Remote position. The role focuses on optimizing ETL pipelines converting donor transactional data into audit-ready general ledger entries."
+        "Notes": "Remote position. The role focuses on optimizing ETL pipelines converting donor transactional data into audit-ready general ledger entries.",
     },
     {
         "Job Title": "Data Analyst / Analytics Engineer (Finance & Operations)",
@@ -42,7 +54,7 @@ ACTIVE_DATA = [
         "Application Status": "Under Review",
         "Days Since Submitted": "2",
         "Next Steps / Action Items": "Monitor the government jobs portal daily for civil service questionnaire updates or status changes.",
-        "Notes": "On-site / Hybrid role. Focuses on writing SQL queries and automating pipeline reporting for regional transit asset tracking and public fund allocations."
+        "Notes": "On-site / Hybrid role. Focuses on writing SQL queries and automating pipeline reporting for regional transit asset tracking and public fund allocations.",
     },
     {
         "Job Title": "Data Engineer I",
@@ -147,8 +159,12 @@ df_archived = pd.DataFrame(ARCHIVED_DATA, columns=COLUMNS)
 # Export using openpyxl engine
 target_path = Path("data/sample_tracker.xlsx")
 
-df_active["Date Submitted"] = pd.to_datetime(df_active["Date Submitted"], format="mixed")
-df_archived["Date Submitted"] = pd.to_datetime(df_archived["Date Submitted"], format="mixed")
+df_active["Date Submitted"] = pd.to_datetime(
+    df_active["Date Submitted"], format="mixed"
+)
+df_archived["Date Submitted"] = pd.to_datetime(
+    df_archived["Date Submitted"], format="mixed"
+)
 
 with pd.ExcelWriter(target_path, engine="openpyxl") as writer:
     df_active.to_excel(writer, sheet_name="Active Applications", index=False)

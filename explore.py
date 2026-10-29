@@ -2,9 +2,9 @@ import pandas as pd
 
 from src.job_tracker.config import TRACKER_PATH
 
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_colwidth', None)
-pd.set_option('display.width', 0)
+pd.set_option("display.max_columns", None)
+pd.set_option("display.max_colwidth", None)
+pd.set_option("display.width", 0)
 
 df_active = pd.read_excel(TRACKER_PATH, sheet_name="Active Applications")
 print("Shape: \n", df_active.shape)

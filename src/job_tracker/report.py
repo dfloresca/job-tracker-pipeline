@@ -10,6 +10,7 @@ def status_breakdown(conn):
     """).fetchall()
     return result
 
+
 def lane_response_rate(conn):
     result = conn.execute("""
         SELECT fit_lane, COUNT(*) AS total_applications,
@@ -18,6 +19,7 @@ def lane_response_rate(conn):
         GROUP BY fit_lane
     """).fetchall()
     return result
+
 
 def employer_type_response_rate(conn):
     result = conn.execute("""
@@ -28,6 +30,7 @@ def employer_type_response_rate(conn):
     """).fetchall()
     return result
 
+
 def salary_distribution_by_lane(conn, column="salary_min"):
     result = conn.execute(f"""
         SELECT fit_lane, MIN({column}) AS min_salary, AVG({column}) AS avg_salary, MAX({column}) AS max_salary
@@ -36,8 +39,10 @@ def salary_distribution_by_lane(conn, column="salary_min"):
     """).fetchall()
     return result
 
+
 def aging_applications(conn, days=30):
-    result = conn.execute("""
+    result = conn.execute(
+        """
         SELECT a.company, a.job_title, a.application_status,
             COALESCE(h.last_change, a.date_submitted) AS last_change,
             CAST(julianday(date('now')) - julianday(COALESCE(h.last_change, a.date_submitted)) AS INTEGER) AS days_aged
@@ -50,11 +55,14 @@ def aging_applications(conn, days=30):
         WHERE a.application_status NOT IN ('rejected', 'no_longer_considered')
             AND days_aged >= ?
         ORDER BY days_aged DESC
-    """, (days,)).fetchall()
+    """,
+        (days,),
+    ).fetchall()
     return result
 
+
 def median_days(conn):
-    # median query calculates median days from submission to first status change 
+    # median query calculates median days from submission to first status change
     result = conn.execute("""
         SELECT a.company, a.job_title, a.application_status,
             CAST(julianday(h.first_change) - julianday(a.date_submitted) AS INTEGER) AS days_to_first_change
@@ -67,9 +75,12 @@ def median_days(conn):
     """).fetchall()
 
     days = [row[3] for row in result if row[3] is not None]
-    median = statistics.median(days) if days else None # SQLite does not have a built-in median function, so we calculate it in Python
+    median = (
+        statistics.median(days) if days else None
+    )  # SQLite does not have a built-in median function, so we calculate it in Python
 
     return median, len(days)
+
 
 # Write the report
 def gather_results(conn):
@@ -83,10 +94,9 @@ def gather_results(conn):
     median_rows = {"median": median, "count": count}
 
     # Calculate total applications from status breakdown
-    
+
     total_applications = sum(num_apps for _, num_apps in status_rows)
 
-   
     # create named fields for lane_response_rate
     lane_rates = rate_rows(lane_rows)
 
@@ -99,11 +109,13 @@ def gather_results(conn):
         "employer_type_response_rate": employer_rates,
         "salary_distribution_by_lane": salary_rows,
         "aging_applications": aging_rows,
-        "median_days": median_rows
+        "median_days": median_rows,
     }
+
 
 def calc_rate(responded, total):
     return round((responded / total) * 100, 1) if total > 0 else None
+
 
 def rate_rows(rows):
     """returns a list of dictionaries with name, total, responses and rate"""
@@ -118,12 +130,17 @@ def rate_rows(rows):
     ]
 
 
+STATUS_ORDER = [
+    "application_received",
+    "in_review",
+    "sme_review",
+    "rejected",
+    "no_longer_considered",
+]
 
-STATUS_ORDER = ["application_received", "in_review", "sme_review", "rejected", "no_longer_considered"]
 
 def render_funnel_table(status_counts, total):
-    lines = ["## Funnel Table", "", 
-             "| Status | Count | Share |", "|---|---|---|"]
+    lines = ["## Funnel Table", "", "| Status | Count | Share |", "|---|---|---|"]
     ordered = STATUS_ORDER + [s for s in status_counts if s not in STATUS_ORDER]
     counted = 0
     for status in ordered:
@@ -133,13 +150,19 @@ def render_funnel_table(status_counts, total):
     lines.append(f"| **Total** | {counted} | {calc_rate(counted, total)}% |")
     return "\n".join(lines)
 
+
 def render_rate_table(heading, label, rows):
-    lines = [f"## {heading}", "",
-             f"| {label} | Applications | Moved past received | Rate |",
-             "| --- | --- | --- | --- |"]
+    lines = [
+        f"## {heading}",
+        "",
+        f"| {label} | Applications | Moved past received | Rate |",
+        "| --- | --- | --- | --- |",
+    ]
     for row in rows:
         rate = "-" if row["rate"] is None else f"{row['rate']}%"
-        lines.append(f"| {row['name']} | {row['total']} | {row['responded']} | {rate} |")
+        lines.append(
+            f"| {row['name']} | {row['total']} | {row['responded']} | {rate} |"
+        )
     return "\n".join(lines)
 
 
@@ -161,25 +184,33 @@ def render_report(results):
     else:
         median_str = f"N/A (n={median_n})"
 
-    report = "\n".join([
-        "# JOB SEARCH PIPELINE REPORT",
-        "",
-        f"Generated on: {today}",
-        "",
-        f"- **Total applications** {total_apps}",
-        f"- **Moved past received** {total_responded} ({overall_rate}%)",
-        f"- **Median to first change:** {median_str}",
-        "",
-        render_funnel_table(results['status_breakdown'], total_apps),
-        "",
-        render_rate_table("Lane Response Rate", "Lane", results['lane_response_rate']),
-        "",
-        render_rate_table("Employer Type Response Rate", "Employer Type", results['employer_type_response_rate'])
+    report = "\n".join(
+        [
+            "# JOB SEARCH PIPELINE REPORT",
+            "",
+            f"Generated on: {today}",
+            "",
+            f"- **Total applications** {total_apps}",
+            f"- **Moved past received** {total_responded} ({overall_rate}%)",
+            f"- **Median to first change:** {median_str}",
+            "",
+            render_funnel_table(results["status_breakdown"], total_apps),
+            "",
+            render_rate_table(
+                "Lane Response Rate", "Lane", results["lane_response_rate"]
+            ),
+            "",
+            render_rate_table(
+                "Employer Type Response Rate",
+                "Employer Type",
+                results["employer_type_response_rate"],
+            ),
         ]
     )
 
     return report
 
+
 def write_report(text, path):
-    path.parent.mkdir(parents=True, exist_ok=True)   # make the folder
+    path.parent.mkdir(parents=True, exist_ok=True)  # make the folder
     path.write_text(text.rstrip("\n") + "\n", encoding="utf-8")
