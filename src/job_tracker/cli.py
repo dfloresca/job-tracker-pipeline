@@ -3,7 +3,7 @@ import logging
 import sqlite3
 from pathlib import Path
 
-from src.job_tracker import config, extract, load, report, validate
+from . import config, extract, load, report, validate
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +20,10 @@ def main():
     run.add_argument("--db", type=Path, default=config.DB_PATH,
                     help="path to the SQLite database (default: %(default)s)")
 
-    report.cmd = sub.add_parser("report", help="write data into report.md")
-    report.cmd.add_argument("--output", type=Path, default=config.REPORT_PATH,
+    report_parser = sub.add_parser("report", help="write data into report.md")
+    report_parser.add_argument("--output", type=Path, default=config.REPORT_PATH,
                     help="where to write the report (default: %(default)s)")
-    report.cmd.add_argument("--db", type=Path, default=config.DB_PATH,
+    report_parser.add_argument("--db", type=Path, default=config.DB_PATH,
                     help="path to the SQLite database (default: %(default)s)")
 
     args = parser.parse_args()
@@ -43,7 +43,7 @@ def main():
         #4 close the connection
         conn.close()
         logger.info("Loaded %d applications into %s", len(df), args.db)
-    elif args.command == "report.cmd":
+    elif args.command == "report":
         if not args.db.exists():
             parser.error(f"database not found: {args.db}")
         # open connection
