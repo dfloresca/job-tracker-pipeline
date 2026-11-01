@@ -1,11 +1,12 @@
-{"public": [
-    "example county",
-    "example government",
-    "example transit",
-    "example utility"
-],
-"nonprofit": [
-    "sample medical system",
-    "sample religious institution",
-    "sample insurance company"
-]}
+{
+  "public": [
+    "king county",
+    "cascade public transit",
+    "sound municipal services"
+  ],
+  "nonprofit": [
+    "the american red cross",
+    "evergreen health alliance",
+    "olympic health network"
+  ]
+}
